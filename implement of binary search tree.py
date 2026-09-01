@@ -1,4 +1,4 @@
-class Node:
+class LogNode:
     def __init__(self, visitor_name, entry_time, purpose):
         self.visitor_name = visitor_name
         self.entry_time = entry_time
@@ -6,181 +6,185 @@ class Node:
         self.left = None
         self.right = None
 
+    def get_details(self):
+        return f"[Name: {self.visitor_name} | Time: {self.entry_time} | Purpose: {self.purpose}]"
 
-class BinarySearchTree:
+class VisitorLogBook:
     def __init__(self):
         self.root = None
 
-    # Insert a log entry
     def insert(self, visitor_name, entry_time, purpose):
-        new_node = Node(visitor_name, entry_time, purpose)
-
         if self.root is None:
-            self.root = new_node
+            self.root = LogNode(visitor_name, entry_time, purpose)
         else:
-            self._insert(self.root, new_node)
+            self._insert_recursive(self.root, visitor_name, entry_time, purpose)
 
-    def _insert(self, current, new_node):
-        if new_node.visitor_name.lower() < current.visitor_name.lower():
-            if current.left is None:
-                current.left = new_node
+    def _insert_recursive(self, current_node, visitor_name, entry_time, purpose):
+        if visitor_name.lower() < current_node.visitor_name.lower():
+            if current_node.left is None:
+                current_node.left = LogNode(visitor_name, entry_time, purpose)
             else:
-                self._insert(current.left, new_node)
+                self._insert_recursive(current_node.left, visitor_name, entry_time, purpose)
         else:
-            if current.right is None:
-                current.right = new_node
+            if current_node.right is None:
+                current_node.right = LogNode(visitor_name, entry_time, purpose)
             else:
-                self._insert(current.right, new_node)
+                self._insert_recursive(current_node.right, visitor_name, entry_time, purpose)
 
-    # Search for a visitor
-    def search(self, visitor_name):
-        return self._search(self.root, visitor_name)
+    def delete(self, visitor_name):
+        self.root = self._delete_recursive(self.root, visitor_name)
 
-    def _search(self, current, visitor_name):
-        if current is None:
-            return None
+    def _delete_recursive(self, node, visitor_name):
+        if node is None:
+            return node
 
-        if current.visitor_name.lower() == visitor_name.lower():
-            return current
-
-        elif visitor_name.lower() < current.visitor_name.lower():
-            return self._search(current.left, visitor_name)
-
+        if visitor_name.lower() < node.visitor_name.lower():
+            node.left = self._delete_recursive(node.left, visitor_name)
+        elif visitor_name.lower() > node.visitor_name.lower():
+            node.right = self._delete_recursive(node.right, visitor_name)
         else:
-            return self._search(current.right, visitor_name)
+            if node.left is None:
+                return node.right
+            elif node.right is None:
+                return node.left
 
-    # Find minimum node
-    def find_min(self, node):
+            min_larger_node = self._get_min(node.right)
+            node.visitor_name = min_larger_node.visitor_name
+            node.entry_time = min_larger_node.entry_time
+            node.purpose = min_larger_node.purpose
+            node.right = self._delete_recursive(node.right, min_larger_node.visitor_name)
+
+        return node
+
+    def _get_min(self, node):
         current = node
-
         while current.left is not None:
             current = current.left
-
         return current
 
-    # Delete a log entry
-    def delete(self, visitor_name):
-        self.root = self._delete(self.root, visitor_name)
+    def search(self, visitor_name):
+        return self._search_recursive(self.root, visitor_name)
 
-    def _delete(self, root, visitor_name):
-        if root is None:
-            return root
+    def _search_recursive(self, node, visitor_name):
+        if node is None or node.visitor_name.lower() == visitor_name.lower():
+            return node
+        if visitor_name.lower() < node.visitor_name.lower():
+            return self._search_recursive(node.left, visitor_name)
+        return self._search_recursive(node.right, visitor_name)
 
-        if visitor_name.lower() < root.visitor_name.lower():
-            root.left = self._delete(root.left, visitor_name)
+    def preorder(self):
+        result = []
+        self._preorder_recursive(self.root, result)
+        return result
 
-        elif visitor_name.lower() > root.visitor_name.lower():
-            root.right = self._delete(root.right, visitor_name)
+    def _preorder_recursive(self, node, result):
+        if node:
+            result.append(node.get_details())
+            self._preorder_recursive(node.left, result)
+            self._preorder_recursive(node.right, result)
 
-        else:
-            # Node with one child or no child
-            if root.left is None:
-                return root.right
-
-            elif root.right is None:
-                return root.left
-
-            # Node with two children
-            temp = self.find_min(root.right)
-
-            root.visitor_name = temp.visitor_name
-            root.entry_time = temp.entry_time
-            root.purpose = temp.purpose
-
-            root.right = self._delete(root.right, temp.visitor_name)
-
-        return root
-
-    # Inorder Traversal
     def inorder(self):
-        self._inorder(self.root)
+        result = []
+        self._inorder_recursive(self.root, result)
+        return result
 
-    def _inorder(self, root):
-        if root:
-            self._inorder(root.left)
-            print("Name:", root.visitor_name,
-                  "| Time:", root.entry_time,
-                  "| Purpose:", root.purpose)
-            self._inorder(root.right)
+    def _inorder_recursive(self, node, result):
+        if node:
+            self._inorder_recursive(node.left, result)
+            result.append(node.get_details())
+            self._inorder_recursive(node.right, result)
 
-    # Postorder Traversal
     def postorder(self):
-        self._postorder(self.root)
+        result = []
+        self._postorder_recursive(self.root, result)
+        return result
 
-    def _postorder(self, root):
-        if root:
-            self._postorder(root.left)
-            self._postorder(root.right)
-            print("Name:", root.visitor_name,
-                  "| Time:", root.entry_time,
-                  "| Purpose:", root.purpose)
+    def _postorder_recursive(self, node, result):
+        if node:
+            self._postorder_recursive(node.left, result)
+            self._postorder_recursive(node.right, result)
+            result.append(node.get_details())
 
-    # Count total entries
     def count_entries(self):
-        return self._count(self.root)
+        return self._count_recursive(self.root)
 
-    def _count(self, root):
-        if root is None:
+    def _count_recursive(self, node):
+        if node is None:
             return 0
+        return 1 + self._count_recursive(node.left) + self._count_recursive(node.right)
 
-        return 1 + self._count(root.left) + self._count(root.right)
 
+if __name__ == "__main__":
+    log_book = VisitorLogBook()
 
-# Main Program
-bst = BinarySearchTree()
+    while True:
+        print("\n=== VISITOR LOG BOOK MENU ===")
+        print("1. Insert a log entry")
+        print("2. Delete a log entry")
+        print("3. Search for a log entry")
+        print("4. Traverse log entries (Pre/In/Post order)")
+        print("5. Count total log entries")
+        print("6. Exit")
+       
+        choice = input("Enter your choice (1-6): ").strip()
 
-while True:
-    print("\n--- LOG BOOK MANAGEMENT ---")
-    print("1. Insert Log Entry")
-    print("2. Delete Log Entry")
-    print("3. Search Log Entry")
-    print("4. Display Entries (Inorder)")
-    print("5. Display Entries (Postorder)")
-    print("6. Count Total Entries")
-    print("7. Exit")
+        if choice == "1":
+            name = input("Enter visitor name: ").strip()
+            time = input("Enter entry time: ").strip()
+            purpose = input("Enter purpose of visit: ").strip()
+            if name and time and purpose:
+                log_book.insert(name, time, purpose)
+                print(f"Success: Log entry added for '{name}'.")
+            else:
+                print("Error: All fields are required.")
 
-    choice = int(input("Enter your choice: "))
+        elif choice == "2":
+            name = input("Enter visitor name to remove: ").strip()
+            match = log_book.search(name)
+            if match:
+                log_book.delete(name)
+                print(f"Success: Log entry for '{name}' removed.")
+            else:
+                print(f"Error: No log entry found for '{name}'.")
 
-    if choice == 1:
-        name = input("Enter Visitor Name: ")
-        time = input("Enter Entry Time: ")
-        purpose = input("Enter Purpose: ")
+        elif choice == "3":
+            name = input("Enter visitor name to search: ").strip()
+            match = log_book.search(name)
+            if match:
+                print(f"Found Entry: {match.get_details()}")
+            else:
+                print(f"No entry found for visitor: '{name}'.")
 
-        bst.insert(name, time, purpose)
-        print("Log entry inserted successfully!")
+        elif choice == "4":
+            if log_book.count_entries() == 0:
+                print("The log book is currently empty.")
+                continue
+               
+            print("\nSelect Traversal Order:")
+            print("a. Pre-order")
+            print("b. In-order (Alphabetical)")
+            print("c. Post-order")
+            t_choice = input("Enter option (a/b/c): ").strip().lower()
+           
+            if t_choice == "a":
+                print("\n--- Pre-order Traversal ---")
+                for entry in log_book.preorder(): print(entry)
+            elif t_choice == "b":
+                print("\n--- In-order Traversal ---")
+                for entry in log_book.inorder(): print(entry)
+            elif t_choice == "c":
+                print("\n--- Post-order Traversal ---")
+                for entry in log_book.postorder(): print(entry)
+            else:
+                print("Invalid traversal selection.")
 
-    elif choice == 2:
-        name = input("Enter Visitor Name to delete: ")
-        bst.delete(name)
-        print("Log entry deleted successfully!")
+        elif choice == "5":
+            print(f"Total active log entries: {log_book.count_entries()}")
 
-    elif choice == 3:
-        name = input("Enter Visitor Name to search: ")
-        result = bst.search(name)
-
-        if result:
-            print("\nVisitor Found!")
-            print("Name:", result.visitor_name)
-            print("Entry Time:", result.entry_time)
-            print("Purpose:", result.purpose)
+        elif choice == "6":
+            print("Exiting system. Goodbye!")
+            break
+           
         else:
-            print("Visitor not found!")
-
-    elif choice == 4:
-        print("\n--- Log Entries in Sorted Order ---")
-        bst.inorder()
-
-    elif choice == 5:
-        print("\n--- Log Entries in Postorder ---")
-        bst.postorder()
-
-    elif choice == 6:
-        print("Total Log Entries:", bst.count_entries())
-
-    elif choice == 7:
-        print("Exiting program...")
-        break
-
-    else:
-        print("Invalid choice! Please try again.")
+            print("Invalid selection. Please choose an option from 1 to 6.")
 
